@@ -1,0 +1,201 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWStructuredBuffer<float4> albedoResult;
+RWStructuredBuffer<float4> normalResult;
+RWStructuredBuffer<float4> maskResult;
+Texture2D<float3> normals;
+
+float4 tilingAndOffset;
+float heightOfSnow;
+float heightOfGrass;
+int textureResolution;
+
+float depth;
+float heightOfBlend;
+
+float slopeFactor;
+float blendAmount;
+
+Texture2DArray<float4> albedoTextures;
+Texture2DArray<float4> normalTextures;
+Texture2DArray<float4> maskTextures;
+
+Texture2D<float4> heightMap;
+Texture2D<float4> RockAlbedo;
+Texture2D<float4> RockNormal;
+Texture2D<float4> RockMask;
+
+SamplerState linearClampSampler;
+
+float InverseLerp(float min, float max, float value){
+    if(min != max){
+        return clamp(0, 1, (value - min) / (max - min));
+    }
+    return 0;
+}
+
+float2 UVSBombing(float2 uvs){
+    float2 floorUVS = floor(uvs);
+    float3 p3 = frac(floorUVS.xyx*float3(0.1031, 0.1030, 0.0973));
+
+    p3 += dot(p3, p3.yzx + 33.33);
+    return frac((p3.xx + p3.yz) * p3.zy) + uvs;
+}
+
+float3 heightSplattingValues(float height){
+    float lerpAboveSnow = InverseLerp(heightOfSnow, 1, height);
+    float lerpAboveGrass = InverseLerp(heightOfGrass, heightOfSnow, height);
+    float lerpBelowGrass = InverseLerp(0, heightOfGrass, height);
+
+    return float3(lerpAboveSnow, lerpAboveGrass, lerpBelowGrass);
+}
+
+float3 heightSplatting(float4 texture1, float4 texture2, float frac){
+    float opac1 = heightOfBlend - frac;
+    float opac2 = frac;
+    float ma = max(texture1.a+ opac1, texture2.a + opac2) - depth;
+
+    float b1 = max(texture1.a+ opac1 - ma, 0);
+    float b2 = max(texture2.a+ opac2 - ma, 0);
+
+    return (texture1.rgb * b1 + texture2.rgb * b2) / (b1 + b2);
+}
+
+float SlopeBlending(float normalY){
+    float slope = 1 - normalY; // slope = 0 when terrain is completely flat
+    float grassBlendHeight = slopeFactor * (1 - blendAmount);
+    return 1 - saturate((slope - grassBlendHeight) / (slopeFactor - grassBlendHeight));
+}
+
+[numthreads(16, 16, 1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float idX = InverseLerp(0, 2047, id.x);
+    float idY = InverseLerp(0, 2047, id.y);
+    float2 uvs = float2((idX * tilingAndOffset.x) + tilingAndOffset.z, (idY * tilingAndOffset.y) + tilingAndOffset.w);
+    if(uvs.x > 1){
+        uvs.x = InverseLerp(1, tilingAndOffset.x + tilingAndOffset.z, uvs.x);
+    }
+    if(uvs.y > 1){
+        uvs.y = InverseLerp(1, tilingAndOffset.y + tilingAndOffset.w, uvs.y);
+    }
+
+    float2 uvs1 = uvs + float2(0.5, 10);
+    float2 uvs2 = uvs + float2(-10, 0.5);
+    float2 uvs3 = uvs + float2(20.5, 0.5);
+
+    uvs = UVSBombing(uvs);
+    uvs1 = UVSBombing(uvs1);
+    uvs2 = UVSBombing(uvs2);
+    uvs3 = UVSBombing(uvs3);
+
+    float2 lerpValues = (frac(uvs) * float2(2, 2)) - float2(1, 1);
+    lerpValues = smoothstep(float2(1, 1), float2(2, 2), lerpValues);
+
+    float4 albedoSample00 = albedoTextures.SampleLevel(linearClampSampler, float3(uvs.x, uvs.y, 0), 0);
+    float4 albedoSample01 = albedoTextures.SampleLevel(linearClampSampler, float3(uvs1.x, uvs1.y, 0), 0);
+    float4 albedoSample02 = albedoTextures.SampleLevel(linearClampSampler, float3(uvs2.x, uvs2.y, 0), 0);
+    float4 albedoSample03 = albedoTextures.SampleLevel(linearClampSampler, float3(uvs3.x, uvs3.y, 0), 0);
+
+    float4 albedoSample10 = albedoTextures.SampleLevel(linearClampSampler, float3(uvs.x, uvs.y, 1), 0);
+    float4 albedoSample11 = albedoTextures.SampleLevel(linearClampSampler, float3(uvs1.x, uvs1.y, 1), 0);
+    float4 albedoSample12 = albedoTextures.SampleLevel(linearClampSampler, float3(uvs2.x, uvs2.y, 1), 0);
+    float4 albedoSample13 = albedoTextures.SampleLevel(linearClampSampler, float3(uvs3.x, uvs3.y, 1), 0);
+
+    float4 albedoSample20 = albedoTextures.SampleLevel(linearClampSampler, float3(uvs.x, uvs.y, 2), 0);
+    float4 albedoSample21 = albedoTextures.SampleLevel(linearClampSampler, float3(uvs1.x, uvs1.y, 2), 0);
+    float4 albedoSample22 = albedoTextures.SampleLevel(linearClampSampler, float3(uvs2.x, uvs2.y, 2), 0);
+    float4 albedoSample23 = albedoTextures.SampleLevel(linearClampSampler, float3(uvs3.x, uvs3.y, 2), 0);
+
+    float4 normalSample00 = (normalTextures.SampleLevel(linearClampSampler, float3(uvs.x, uvs.y, 0), 0) * 2) - 1;
+    float4 normalSample01 = (normalTextures.SampleLevel(linearClampSampler, float3(uvs1.x, uvs1.y, 0), 0) * 2) - 1;
+    float4 normalSample02 = (normalTextures.SampleLevel(linearClampSampler, float3(uvs2.x, uvs2.y, 0), 0) * 2) - 1;
+    float4 normalSample03 = (normalTextures.SampleLevel(linearClampSampler, float3(uvs3.x, uvs3.y, 0), 0) * 2) - 1;
+
+    float4 normalSample10 = (normalTextures.SampleLevel(linearClampSampler, float3(uvs.x, uvs.y, 1), 0) * 2) - 1;
+    float4 normalSample11 = (normalTextures.SampleLevel(linearClampSampler, float3(uvs1.x, uvs1.y, 1), 0) * 2) - 1;
+    float4 normalSample12 = (normalTextures.SampleLevel(linearClampSampler, float3(uvs2.x, uvs2.y, 1), 0) * 2) - 1;
+    float4 normalSample13 = (normalTextures.SampleLevel(linearClampSampler, float3(uvs3.x, uvs3.y, 1), 0) * 2) - 1;
+
+    float4 normalSample20 = (normalTextures.SampleLevel(linearClampSampler, float3(uvs.x, uvs.y, 2), 0) * 2) - 1;
+    float4 normalSample21 = (normalTextures.SampleLevel(linearClampSampler, float3(uvs1.x, uvs1.y, 2), 0) * 2) - 1;
+    float4 normalSample22 = (normalTextures.SampleLevel(linearClampSampler, float3(uvs2.x, uvs2.y, 2), 0) * 2) - 1;
+    float4 normalSample23 = (normalTextures.SampleLevel(linearClampSampler, float3(uvs3.x, uvs3.y, 2), 0) * 2) - 1;
+
+    float4 maskSample00 = maskTextures.SampleLevel(linearClampSampler, float3(uvs.x, uvs.y, 0), 0);
+    float4 maskSample01 = maskTextures.SampleLevel(linearClampSampler, float3(uvs1.x, uvs1.y, 0), 0);
+    float4 maskSample02 = maskTextures.SampleLevel(linearClampSampler, float3(uvs2.x, uvs2.y, 0), 0);
+    float4 maskSample03 = maskTextures.SampleLevel(linearClampSampler, float3(uvs3.x, uvs3.y, 0), 0);
+
+    float4 maskSample10 = maskTextures.SampleLevel(linearClampSampler, float3(uvs.x, uvs.y, 1), 0);
+    float4 maskSample11 = maskTextures.SampleLevel(linearClampSampler, float3(uvs1.x, uvs1.y, 1), 0);
+    float4 maskSample12 = maskTextures.SampleLevel(linearClampSampler, float3(uvs2.x, uvs2.y, 1), 0);
+    float4 maskSample13 = maskTextures.SampleLevel(linearClampSampler, float3(uvs3.x, uvs3.y, 1), 0);
+
+    float4 maskSample20 = maskTextures.SampleLevel(linearClampSampler, float3(uvs.x, uvs.y, 2), 0);
+    float4 maskSample21 = maskTextures.SampleLevel(linearClampSampler, float3(uvs1.x, uvs1.y, 2), 0);
+    float4 maskSample22 = maskTextures.SampleLevel(linearClampSampler, float3(uvs2.x, uvs2.y, 2), 0);
+    float4 maskSample23 = maskTextures.SampleLevel(linearClampSampler, float3(uvs3.x, uvs3.y, 2), 0);
+
+    float4 albedoSample0 = lerp(lerp(albedoSample00, albedoSample01, lerpValues.x), 
+                                lerp(albedoSample02, albedoSample03, lerpValues.x), lerpValues.y);
+    float4 albedoSample1 = lerp(lerp(albedoSample10, albedoSample11, lerpValues.x), 
+                                lerp(albedoSample12, albedoSample13, lerpValues.x), lerpValues.y);
+    float4 albedoSample2 = lerp(lerp(albedoSample20, albedoSample21, lerpValues.x), 
+                                lerp(albedoSample22, albedoSample23, lerpValues.x), lerpValues.y);
+
+    float4 normalSample0 = lerp(lerp(normalSample00, normalSample01, lerpValues.x), 
+                                lerp(normalSample02, normalSample03, lerpValues.x), lerpValues.y);
+    float4 normalSample1 = lerp(lerp(normalSample10, normalSample11, lerpValues.x), 
+                                lerp(normalSample12, normalSample13, lerpValues.x), lerpValues.y);
+    float4 normalSample2 = lerp(lerp(normalSample20, normalSample21, lerpValues.x), 
+                                lerp(normalSample22, normalSample23, lerpValues.x), lerpValues.y);
+
+    float4 maskSample0 = lerp(lerp(maskSample00, maskSample01, lerpValues.x),
+                              lerp(maskSample02, maskSample03, lerpValues.x), lerpValues.y);
+    float4 maskSample1 = lerp(lerp(maskSample10, maskSample11, lerpValues.x), 
+                              lerp(maskSample12, maskSample13, lerpValues.x), lerpValues.y);
+    float4 maskSample2 = lerp(lerp(maskSample20, maskSample21, lerpValues.x), 
+                              lerp(maskSample22, maskSample23, lerpValues.x), lerpValues.y);
+
+    float3 splattingValues = heightSplattingValues(heightMap.SampleLevel(linearClampSampler, float2(idX, idY), 0).y);
+    float3 normal = normals.SampleLevel(linearClampSampler, float2(idX, idY), 0) * 2 - 1;
+
+    float3 finalAlbedo = heightSplatting(
+        float4(heightSplatting(albedoSample0, albedoSample1, splattingValues.z), 1), 
+        float4(heightSplatting(albedoSample1, albedoSample2, splattingValues.x), 1), splattingValues.y);
+
+    float finalAlpha = lerp(lerp(albedoSample0.w, albedoSample1.w, splattingValues.z), 
+                            lerp(albedoSample1.w, albedoSample2.w, splattingValues.x), splattingValues.y);
+
+    float finalSmoothness = lerp(lerp(maskSample0.w, maskSample1.w, splattingValues.z),
+                                 lerp(maskSample1.w, maskSample2.w, splattingValues.x), splattingValues.y);
+
+    float3 finalNormal = heightSplatting(
+        float4(heightSplatting(normalSample0, normalSample1, splattingValues.z), 1), 
+        float4(heightSplatting(normalSample1, normalSample2, splattingValues.x), 1), splattingValues.y);
+
+    float3 finalMask = heightSplatting(
+        float4(heightSplatting(maskSample0, maskSample1, splattingValues.z), 1), 
+        float4(heightSplatting(maskSample1, maskSample2, splattingValues.x), 1), splattingValues.y);
+
+    float slopeBlendFactor = SlopeBlending(normal.y);
+    float4 rockAlbedo = RockAlbedo.SampleLevel(linearClampSampler, uvs, 0);
+    float4 rockNormal = RockNormal.SampleLevel(linearClampSampler, uvs, 0);
+    float4 rockMask = RockMask.SampleLevel(linearClampSampler, uvs, 0);
+    float rockAlpha = rockAlbedo.w;
+    float rockSmoothness = rockMask.w;
+
+    float3 blendedWithRockALbedo = heightSplatting(rockAlbedo, float4(finalAlbedo, 1), slopeBlendFactor);
+    float3 blendedWithRockNormal = heightSplatting(rockNormal, float4(finalNormal, 1), slopeBlendFactor);
+    float blendedWithRockAlpha = lerp(rockAlpha, finalAlpha, slopeBlendFactor);
+    float3 blendedWithRockMask = heightSplatting(rockMask, float4(finalMask, 1), slopeBlendFactor);
+    float blendedWithRockSmoothness = lerp(rockSmoothness, finalSmoothness, slopeBlendFactor);
+
+    albedoResult[id.x + textureResolution * id.y] = pow(float4(blendedWithRockALbedo, blendedWithRockAlpha), 0.4545);
+    normalResult[id.x + textureResolution * id.y] = float4(blendedWithRockNormal, 1);
+    maskResult[id.x + textureResolution * id.y] = float4(blendedWithRockMask, blendedWithRockSmoothness);
+}
