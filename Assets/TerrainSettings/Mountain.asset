@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1cc4da87c8e2e54788c038c048fe390, type: 3}
   m_Name: Mountain
   m_EditorClassIdentifier: 
-  useFirstLayerAsMask: 1
-  showSettings: 0
+  useFirstLayerAsMask: 0
+  showSettings: 1
   layerActive: 1
   octavesSize: 7
   lacunarity: 1.5
   amplitude: 2
-  frequency: 0.65
+  frequency: 5
   persistence: 0.666
   seed: 3
   useHeightCurve: 1
@@ -28,18 +28,18 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0
       value: 0
-      inSlope: 2
-      outSlope: 2
-      tangentMode: 0
+      inSlope: 1
+      outSlope: 1
+      tangentMode: 34
       weightedMode: 0
       inWeight: 0
       outWeight: 0
     - serializedVersion: 3
       time: 1
       value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
+      inSlope: 1
+      outSlope: 1
+      tangentMode: 34
       weightedMode: 0
       inWeight: 0
       outWeight: 0

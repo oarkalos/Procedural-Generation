@@ -4,6 +4,7 @@ using UnityEngine;
 using Unity.Mathematics;
 using System.IO;
 using UnityEditor;
+using System;
 
 public enum typeOfNoise
 {
@@ -22,7 +23,6 @@ public class GenerateTerrain : MonoBehaviour
     Mesh mesh;
     Vector3[] vertices;
     Vector3[] waterVertices;
-    Vector2[] octaves;
     int[] triangles;
     Vector2[] uvs;
     float[] minTerrainHeight;
@@ -33,7 +33,7 @@ public class GenerateTerrain : MonoBehaviour
     Vector3[] normals;
 
     [Header("Terrain Settings")]
-    public float scale = 75f;
+    public float scale;
     public float elevationScale = 50f;
     public int mapSize = 255;
 
@@ -86,7 +86,18 @@ public class GenerateTerrain : MonoBehaviour
 
     void Erode()
     {
+        minHeight = 100;
+        maxHeight = 0;
         erosion.Erode(ref heights, mapSize, noiseLayers[0].seed);
+
+        for (int z = 0; z < mapSize; z++)
+        {
+            for (int x = 0; x < mapSize; x++)
+            {
+                minHeight = Mathf.Min(minHeight, heights[z, x]);
+                maxHeight = Mathf.Max(maxHeight, heights[z, x]);
+            }
+        }
 
     }
     public void CreateTerrain()
@@ -101,12 +112,11 @@ public class GenerateTerrain : MonoBehaviour
         //Generate height map
         for (int i = 0; i < noiseLayers.Capacity; i++)
         {
-            octaves = GetOctaves(noiseLayers[i]);
             for (int z = 0; z < mapSize; z++)
             {
                 for (int x = 0; x < mapSize; x++)
                 {
-                    heightMap[i, z, x] = Noise(z, x, octaves, noiseLayers[i]);
+                    heightMap[i, z, x] = Noise(z, x, noiseLayers[i]);
                     minTerrainHeight[i] = Mathf.Min(minTerrainHeight[i], heightMap[i, z, x]);
                     maxTerrainHeight[i] = Mathf.Max(maxTerrainHeight[i], heightMap[i, z, x]);
                 }
@@ -118,10 +128,8 @@ public class GenerateTerrain : MonoBehaviour
         {
             for (int z = 0; z < mapSize; z++)
             {
-                float zCoord = ((float)z / (mapSize - 1f)) * 2;
                 for (int x = 0; x < mapSize; x++)
                 {
-                    float xCoord = ((float)x / (mapSize - 1f)) * 2;
                     heightMap[i, z, x] = Mathf.InverseLerp(minTerrainHeight[i], maxTerrainHeight[i], heightMap[i, z, x]);
                     if (noiseLayers[i].useHeightCurve)
                     {
@@ -147,8 +155,7 @@ public class GenerateTerrain : MonoBehaviour
                         {
                             mask = noiseLayers[l].useFirstLayerAsMask ? heightMap[0, z, x] : 1;
                         }
-                        float tmpHeight = heightMap[l, z, x];
-                        height += tmpHeight * mask;
+                        height += heightMap[l, z, x] * mask;
                     }
                 }
                 if (fallOffEnabled)
@@ -159,6 +166,11 @@ public class GenerateTerrain : MonoBehaviour
                 maxHeight = Mathf.Max(maxHeight, height);
                 heights[z, x] = height;
             }
+        }
+
+        if (erode)
+        {
+            Erode();
         }
 
         for (int z = 0; z < mapSize; z++)
@@ -174,11 +186,6 @@ public class GenerateTerrain : MonoBehaviour
         byte[] bytes = textureHeightMap.EncodeToPNG();
         File.WriteAllBytes(Application.dataPath + "/Resources/Textures/heightMap.png", bytes);
         AssetDatabase.Refresh();
-
-        if (erode)
-        {
-            Erode();
-        }
     }
 
     public float ApplyFallOff(float x, float z, float height)
@@ -260,27 +267,18 @@ public class GenerateTerrain : MonoBehaviour
         }
     }
 
-    Vector2[] GetOctaves(NoiseSettings noiseSettings)
-    {
-        Vector2[] octaveOffset = new Vector2[noiseSettings.octavesSize];
-        prng = new System.Random(noiseSettings.seed);
-        for (int i = 0; i < noiseSettings.octavesSize; i++)
-        {
-            octaveOffset[i] = new Vector2(prng.Next(-100000, 100000), prng.Next(-100000, 100000));
-        }
-        return octaveOffset;
-    }
-
-    float Noise(int z, int x, Vector2[] octaves, NoiseSettings noiseSettings)
+    float Noise(int z, int x, NoiseSettings noiseSettings)
     {
         float tmpAmplitude = noiseSettings.amplitude;
         float tmpFrequency = noiseSettings.frequency;
         float height = 0f;
 
-        for (int i = 0; i < octaves.Length; i++)
+        prng = new System.Random(noiseSettings.seed);
+        float gridSize = (float)mapSize;
+        for (int i = 0; i < noiseSettings.octavesSize; i++)
         {
-            float zCoord = (float)z / scale * tmpFrequency + octaves[i].y;
-            float xCoord = (float)x / scale * tmpFrequency + octaves[i].x;
+            float xCoord = (float)(x * tmpFrequency / gridSize) + prng.Next(-100000, 100000);
+            float zCoord = (float)(z * tmpFrequency / gridSize) + prng.Next(-100000, 100000);
             float value = 0;
 
             switch (noiseSettings.noiseType)
@@ -305,6 +303,7 @@ public class GenerateTerrain : MonoBehaviour
             tmpFrequency *= noiseSettings.lacunarity;
             tmpAmplitude *= noiseSettings.persistence;
         }
+
         return height;
     }
 
