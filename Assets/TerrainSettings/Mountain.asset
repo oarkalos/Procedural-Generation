@@ -15,31 +15,66 @@ MonoBehaviour:
   useFirstLayerAsMask: 0
   showSettings: 1
   layerActive: 1
-  octavesSize: 7
-  lacunarity: 1.5
-  amplitude: 2
-  frequency: 5
-  persistence: 0.666
+  octavesSize: 12
+  lacunarity: 2
+  frequency: 2
+  persistence: 0.5
   seed: 3
-  useHeightCurve: 1
+  useHeightCurve: 0
   heightCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
       time: 0
       value: 0
-      inSlope: 1
-      outSlope: 1
-      tangentMode: 34
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
       weightedMode: 0
       inWeight: 0
       outWeight: 0
     - serializedVersion: 3
+      time: 0.35384166
+      value: 0.015193149
+      inSlope: 0.17644967
+      outSlope: 1.6781906
+      tangentMode: 65
+      weightedMode: 0
+      inWeight: 0.2908794
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.5819917
+      value: 0.39807236
+      inSlope: 1.3318734
+      outSlope: 1.3318734
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.7431169
+      value: 0.99872166
+      inSlope: 0.74043274
+      outSlope: 0.74043274
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.80412227
+      value: 0.9915595
+      inSlope: -0.117402054
+      outSlope: 0.04309063
+      tangentMode: 69
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
       time: 1
       value: 1
-      inSlope: 1
-      outSlope: 1
-      tangentMode: 34
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 65
       weightedMode: 0
       inWeight: 0
       outWeight: 0
@@ -48,5 +83,5 @@ MonoBehaviour:
     m_RotationOrder: 4
   Turbulance: 1
   Ridges: 1
-  RidgesStrength: 2
+  RidgesStrength: 3
   noiseType: 1

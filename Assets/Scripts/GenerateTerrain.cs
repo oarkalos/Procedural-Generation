@@ -53,14 +53,12 @@ public class GenerateTerrain : MonoBehaviour
     // Start is called before the first frame update
     void Init()
     {
-        if (mesh == null)
-        {
-            mesh = new Mesh();
-            vertices = new Vector3[mapSize * mapSize];
-            waterVertices = new Vector3[mapSize * mapSize];
-            triangles = new int[(mapSize - 1) * (mapSize - 1) * 6];
-            uvs = new Vector2[vertices.Length];
-        }
+        mesh = new Mesh();
+        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        vertices = new Vector3[mapSize * mapSize];
+        waterVertices = new Vector3[mapSize * mapSize];
+        triangles = new int[(mapSize - 1) * (mapSize - 1) * 6];
+        uvs = new Vector2[vertices.Length];
 
         if (erosion == null)
         {
@@ -141,10 +139,10 @@ public class GenerateTerrain : MonoBehaviour
 
         for (int z = 0; z < mapSize; z++)
         {
-            float zCoord = ((float)z / (mapSize - 1f)) * 2;
+            float zCoord = (float)z / (mapSize - 1f);
             for (int x = 0; x < mapSize; x++)
             {
-                float xCoord = ((float)x / (mapSize - 1f)) * 2;
+                float xCoord = (float)x / (mapSize - 1f);
                 float height = 0;
                 float mask = 1;
                 for (int l = 0; l < noiseLayers.Capacity; l++)
@@ -190,19 +188,19 @@ public class GenerateTerrain : MonoBehaviour
 
     public float ApplyFallOff(float x, float z, float height)
     {
-        float value = 0;
+        float distFromCenter = 0;
         float h = 0;
         switch (fallOffType)
         {
             case typeOfFallOff.Circle:
-                value = Mathf.Pow(x - 1, 2) + Mathf.Pow(z - 1, 2);
-                value /= 2;
+                distFromCenter = Mathf.Pow(x - 0.5f, 2) + Mathf.Pow(z - 0.5f, 2);
+                distFromCenter *= 2;
                 break;
             case typeOfFallOff.Rectangle:
-                value = Mathf.Max(Mathf.Abs(x - 1), Mathf.Abs(z - 1));
+                distFromCenter = Mathf.Max(Mathf.Abs(x - 1), Mathf.Abs(z - 1));
                 break;
         }
-        h = Mathf.Pow(value, a) / (Mathf.Pow(value, a) + Mathf.Pow(b - b * value, a));
+        h = Mathf.Pow(distFromCenter, a) / (Mathf.Pow(distFromCenter, a) + Mathf.Pow(b - b * distFromCenter, a));
         if (height > fallOffHeight)
         {
             return Mathf.Lerp(height, fallOffHeight, h);
@@ -212,7 +210,7 @@ public class GenerateTerrain : MonoBehaviour
             float clampedHeight;
             if (!underwaterRavines)
             {
-                clampedHeight = Mathf.Clamp(height, fallOffHeight, 1);
+                clampedHeight = fallOffHeight;
             }
             else
             {
@@ -228,26 +226,20 @@ public class GenerateTerrain : MonoBehaviour
         int v = 0;
         int t = 0;
         int i = 0;
-        int x = 0;
-
-        if (mapSize > 256)
-        {
-            Debug.LogError("MapSize exceeds unity's limit of vertices(256).");
-            return;
-        }
 
         //Create mesh with the height map
         for (int z = 0; z < mapSize; z++)
         {
             float zCoord = ((float)z / (mapSize - 1f)) * 2;
-            for (x = 0; x < mapSize; x++)
+            for (int x = 0; x < mapSize; x++)
             {
                 float xCoord = ((float)x / (mapSize - 1f)) * 2;
                 vertices[i] = new Vector3((xCoord - 1) * scale, heights[z, x] * elevationScale, (zCoord - 1) * scale);
                 waterVertices[i] = new Vector3((xCoord - 1) * scale, 0f, (zCoord - 1) * scale);
-                uvs[i] = new Vector2((float)x / mapSize, (float)z / mapSize);
+                uvs[i] = new Vector2((float)x / (mapSize - 1f), (float)z / (mapSize - 1f));
                 i++;
 
+                //Create triangles until the second last collumn.
                 if ((z < mapSize - 1) && (x < mapSize - 1))
                 {
                     triangles[t] = v;
@@ -269,7 +261,7 @@ public class GenerateTerrain : MonoBehaviour
 
     float Noise(int z, int x, NoiseSettings noiseSettings)
     {
-        float tmpAmplitude = noiseSettings.amplitude;
+        float tmpAmplitude = 1.0f;
         float tmpFrequency = noiseSettings.frequency;
         float height = 0f;
 
@@ -279,27 +271,27 @@ public class GenerateTerrain : MonoBehaviour
         {
             float xCoord = (float)(x * tmpFrequency / gridSize) + prng.Next(-100000, 100000);
             float zCoord = (float)(z * tmpFrequency / gridSize) + prng.Next(-100000, 100000);
-            float value = 0;
+            float distFromCenter = 0;
 
             switch (noiseSettings.noiseType)
             {
                 case typeOfNoise.Simplex:
-                    value = (noise.snoise(new float2(xCoord, zCoord)) * 2) - 1;
+                    distFromCenter = noise.snoise(new float2(xCoord, zCoord));
                     break;
                 case typeOfNoise.Perlin:
-                    value = (Mathf.PerlinNoise(xCoord, zCoord) * 2) - 1;
+                    distFromCenter = (Mathf.PerlinNoise(xCoord, zCoord) * 2) - 1;
                     break;
             }
             if (noiseSettings.Turbulance)
             {
-                value = Mathf.Abs(value);
-                if (noiseSettings.Ridges)
-                {
-                    value = 1 - value;
-                    value = Mathf.Pow(value, noiseSettings.RidgesStrength);
-                }
+                distFromCenter = Mathf.Abs(distFromCenter);
             }
-            height += value * tmpAmplitude;
+            if (noiseSettings.Ridges)
+            {
+                distFromCenter = 1 - distFromCenter;
+                distFromCenter = Mathf.Pow(distFromCenter, noiseSettings.RidgesStrength);
+            }
+            height += distFromCenter * tmpAmplitude;
             tmpFrequency *= noiseSettings.lacunarity;
             tmpAmplitude *= noiseSettings.persistence;
         }

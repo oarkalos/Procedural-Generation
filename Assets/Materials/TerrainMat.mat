@@ -284,12 +284,12 @@ Material:
     - _IridescenceThickness: 1
     - _LinkDetailsWithBase: 1
     - _MaterialID: 1
-    - _MaxHeight: 81.7
+    - _MaxHeight: 69.46
     - _Metalic: 1
     - _Metallic: 0.05
     - _MetallicRemapMax: 1
     - _MetallicRemapMin: 0
-    - _MinHeight: 2.2
+    - _MinHeight: -25.6
     - _MudA: 0.1
     - _MudB: 0.7
     - _MudNoise: 100
