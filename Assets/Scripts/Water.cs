@@ -36,7 +36,6 @@ public class Water : MonoBehaviour
         {
             if (water == null)
             {
-                //water = GameObject.CreatePrimitive(PrimitiveType.Plane);
                 water = new GameObject("Water");
                 water.AddComponent<MeshFilter>();
                 water.AddComponent<MeshRenderer>();
@@ -46,12 +45,14 @@ public class Water : MonoBehaviour
                 mesh.triangles = generateTerrain.GetWaterTriangles();
                 mesh.uv = generateTerrain.GetWaterUVS();
                 mesh.RecalculateNormals();
-                //water.GetComponent<MeshCollider>().enabled = false;
+
                 water.transform.parent = generateTerrain.transform;
                 water.transform.localScale = new Vector3(1f, 1f, 1f);
                 water.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+
                 water.name = "Water";
                 Material newMat = Resources.Load("Water", typeof(Material)) as Material;
+
                 water.GetComponent<MeshRenderer>().material = newMat;
                 water.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
                 water.GetComponent<MeshFilter>().mesh = mesh;

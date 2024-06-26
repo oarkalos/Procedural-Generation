@@ -34,11 +34,11 @@ public class Erosion : MonoBehaviour
 
     Vector3 CalculateNewDirection(float4 gradients, float u, float v, Vector3 dir)
     {
-        float gradientX = (gradients.y - gradients.x) * (1 - v) + (gradients.w - gradients.z) * v;
-        float gradientY = (gradients.z - gradients.x) * (1 - u) + (gradients.w - gradients.y) * u;
+        float gradientX = Mathf.Lerp(gradients.y - gradients.x, gradients.w - gradients.z, v);
+        float gradientY = Mathf.Lerp(gradients.z - gradients.x, gradients.w - gradients.y, u);
 
-        dir.x = dir.x * inertia - gradientX * (1 - inertia);
-        dir.y = dir.y * inertia - gradientY * (1 - inertia);
+        dir.x = Mathf.Lerp(-gradientX, dir.x, inertia);
+        dir.y = Mathf.Lerp(-gradientY, dir.y, inertia);
         return dir.normalized;
     }
 
@@ -87,7 +87,7 @@ public class Erosion : MonoBehaviour
         int tmpTrackCounter = erosionTrackCounter;
         for (int j = 0; j < erosionIterations; j++)
         {
-            float2 position = new float2(prng.Next(0, mapSize - 1), prng.Next(0, mapSize - 1));
+            float2 position = new float2(UnityEngine.Random.Range(0.0f, mapSize - 1.0f), UnityEngine.Random.Range(0.0f, mapSize - 1.0f));
             float speed = startSpeed;
             Vector3 direction = new Vector3(0, 0, 0);
             float sediment = 0;
@@ -106,13 +106,18 @@ public class Erosion : MonoBehaviour
                 float oldU = position.x - oldIntPos.x;
                 float oldV = position.y - oldIntPos.y;
 
-                /* Old gradient SE */
-                gradients.x = heightMap[oldIntPos.x, oldIntPos.y];
+                if ((oldIntPos.x > mapSize - 2) || (oldIntPos.y > mapSize - 2) || (oldIntPos.x < 1) || (oldIntPos.y < 1))
+                {
+                    break;
+                }
+
                 /* Old gradient SW */
+                gradients.x = heightMap[oldIntPos.x, oldIntPos.y];
+                /* Old gradient SE */
                 gradients.y = heightMap[oldIntPos.x + 1, oldIntPos.y];
-                /* Old gradient NE */
-                gradients.z = heightMap[oldIntPos.x, oldIntPos.y + 1];
                 /* Old gradient NW */
+                gradients.z = heightMap[oldIntPos.x, oldIntPos.y + 1];
+                /* Old gradient NE */
                 gradients.w = heightMap[oldIntPos.x + 1, oldIntPos.y + 1];
 
                 float oldHeight = gradients.x * (1 - oldU) * (1 - oldV) + gradients.y * oldU * (1 - oldV) + gradients.z * (1 - oldU)
@@ -122,8 +127,8 @@ public class Erosion : MonoBehaviour
                 position.x += direction.x;
                 position.y += direction.y;
 
-                if (((direction.x == 0) && (direction.y == 0)) || (position.x < brushRadius) || (position.x > mapSize - brushRadius)
-                                                               || (position.y < brushRadius) || (position.y > mapSize - brushRadius))
+                if (((direction.x == 0) && (direction.y == 0)) || (position.x < 1) || (position.x > mapSize - 2)
+                                                               || (position.y < 1) || (position.y > mapSize - 2))
                 {
                     break;
                 }
@@ -133,13 +138,13 @@ public class Erosion : MonoBehaviour
                 float newU = position.x - newIntPos.x;
                 float newV = position.y - newIntPos.y;
 
-                /* New gradient SE */
-                gradients.x = heightMap[newIntPos.x, newIntPos.y];
                 /* New gradient SW */
+                gradients.x = heightMap[newIntPos.x, newIntPos.y];
+                /* New gradient SE */
                 gradients.y = heightMap[newIntPos.x + 1, newIntPos.y];
-                /* New gradient NE */
-                gradients.z = heightMap[newIntPos.x, newIntPos.y + 1];
                 /* New gradient NW */
+                gradients.z = heightMap[newIntPos.x, newIntPos.y + 1];
+                /* New gradient NE */
                 gradients.w = heightMap[newIntPos.x + 1, newIntPos.y + 1];
 
                 float newHeight = gradients.x * (1 - newU) * (1 - newV) + gradients.y * newU * (1 - newV) + gradients.z * (1 - newU)
@@ -165,7 +170,10 @@ public class Erosion : MonoBehaviour
                     for (int i = 0; i < brushIndexOffsets.Count; i++)
                     {
                         int2 erodePos = newIntPos + brushIndexOffsets[i];
-
+                        if ((erodePos.x > mapSize - 1) || (erodePos.y > mapSize - 1) || (erodePos.x < 1) || (erodePos.y < 1))
+                        {
+                            continue;
+                        }
                         float weightedErode = amountToErode * brushWeights[i];
                         float deltaSediment = (heightMap[erodePos.x, erodePos.y] < weightedErode) ? heightMap[erodePos.x, erodePos.y] : weightedErode;
                         heightMap[erodePos.x, erodePos.y] -= deltaSediment;
