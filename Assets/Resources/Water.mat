@@ -180,7 +180,7 @@ Material:
     - _Cutoff: 0.5
     - _Depth: 0.1
     - _DepthOffsetEnable: 0
-    - _Depth_Strength: 0.1
+    - _Depth_Strength: 0.15
     - _DetailAlbedoScale: 1
     - _DetailNormalScale: 1
     - _DetailSmoothnessScale: 1
@@ -240,7 +240,7 @@ Material:
     - _ReceivesSSR: 1
     - _ReceivesSSRTransparent: 1
     - _RefractionModel: 0
-    - _RefractionStrength: 0.5
+    - _RefractionStrength: 0.02
     - _RenderQueueType: 4
     - _RequireSplitLighting: 0
     - _Ripple_Speed: 0.05
@@ -295,8 +295,8 @@ Material:
     - _UVEmissive: 0
     - _UseEmissiveIntensity: 0
     - _UseShadowThreshold: 0
-    - _WaterEdgeOpacity: 0.334
-    - _WaterOpacity: 0.398
+    - _WaterEdgeOpacity: 0.396
+    - _WaterOpacity: 0.455
     - _ZTestDepthEqualForOpaque: 4
     - _ZTestGBuffer: 4
     - _ZTestTransparent: 4

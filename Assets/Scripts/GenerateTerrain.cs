@@ -1,10 +1,9 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Mathematics;
 using System.IO;
 using UnityEditor;
-using System;
+using System.Diagnostics;
 
 public enum typeOfNoise
 {
@@ -121,22 +120,6 @@ public class GenerateTerrain : MonoBehaviour
             }
         }
 
-        //Normalize heights
-        for (int i = 0; i < noiseLayers.Capacity; i++)
-        {
-            for (int z = 0; z < mapSize; z++)
-            {
-                for (int x = 0; x < mapSize; x++)
-                {
-                    heightMap[i, z, x] = Mathf.InverseLerp(minTerrainHeight[i], maxTerrainHeight[i], heightMap[i, z, x]);
-                    if (noiseLayers[i].useHeightCurve)
-                    {
-                        heightMap[i, z, x] = noiseLayers[i].heightCurve.Evaluate(heightMap[i, z, x]);
-                    }
-                }
-            }
-        }
-
         for (int z = 0; z < mapSize; z++)
         {
             float zCoord = (float)z / (mapSize - 1f);
@@ -149,6 +132,11 @@ public class GenerateTerrain : MonoBehaviour
                 {
                     if (noiseLayers[l].layerActive)
                     {
+                        heightMap[l, z, x] = Mathf.InverseLerp(minTerrainHeight[l], maxTerrainHeight[l], heightMap[l, z, x]);
+                        if (noiseLayers[l].useHeightCurve)
+                        {
+                            heightMap[l, z, x] = noiseLayers[l].heightCurve.Evaluate(heightMap[l, z, x]);
+                        }
                         if (l != 0)
                         {
                             mask = noiseLayers[l].useFirstLayerAsMask ? heightMap[0, z, x] : 1;
@@ -223,6 +211,8 @@ public class GenerateTerrain : MonoBehaviour
 
     public void Generate()
     {
+        Stopwatch st = new Stopwatch();
+        st.Start();
         int v = 0;
         int t = 0;
         int i = 0;
@@ -257,6 +247,9 @@ public class GenerateTerrain : MonoBehaviour
                 }
             }
         }
+        st.Stop();
+        UnityEngine.Debug.Log(string.Format("MyMethod took {0} ms to complete", st.ElapsedMilliseconds));
+
     }
 
     float Noise(int z, int x, NoiseSettings noiseSettings)

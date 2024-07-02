@@ -12,14 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1cc4da87c8e2e54788c038c048fe390, type: 3}
   m_Name: island
   m_EditorClassIdentifier: 
-  useFirstLayerAsMask: 0
+  useFirstLayerAsMask: 1
   showSettings: 1
-  layerActive: 0
-  octavesSize: 5
-  lacunarity: 2
-  amplitude: 12
-  frequency: 0.23
-  persistence: 0.18
+  layerActive: 1
+  octavesSize: 10
+  lacunarity: 2.2
+  frequency: 2
+  persistence: 0.442
   seed: 20
   useHeightCurve: 1
   heightCurve:
@@ -46,7 +45,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  Turbulance: 1
+  Turbulance: 0
   Ridges: 1
   RidgesStrength: 1
   noiseType: 1

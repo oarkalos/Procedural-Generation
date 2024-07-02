@@ -1,6 +1,4 @@
-using System.Collections;
 using System.Collections.Generic;
-using System.Data.SqlTypes;
 using Unity.Mathematics;
 using UnityEngine;
 using System.IO;
@@ -9,7 +7,7 @@ using UnityEditor;
 public class Erosion : MonoBehaviour
 {
     [Header("Erosion settings")]
-    public int erosionIterations;
+    public int droplets;
     public int brushRadius;
     public int maxLifeTime;
     public int erosionTrackCounter;
@@ -85,7 +83,7 @@ public class Erosion : MonoBehaviour
         }
 
         int tmpTrackCounter = erosionTrackCounter;
-        for (int j = 0; j < erosionIterations; j++)
+        for (int j = 0; j < droplets; j++)
         {
             float2 position = new float2(UnityEngine.Random.Range(0.0f, mapSize - 1.0f), UnityEngine.Random.Range(0.0f, mapSize - 1.0f));
             float speed = startSpeed;
