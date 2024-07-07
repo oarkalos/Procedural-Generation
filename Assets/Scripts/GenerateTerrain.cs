@@ -3,7 +3,6 @@ using UnityEngine;
 using Unity.Mathematics;
 using System.IO;
 using UnityEditor;
-using System.Diagnostics;
 
 public enum typeOfNoise
 {
@@ -211,8 +210,6 @@ public class GenerateTerrain : MonoBehaviour
 
     public void Generate()
     {
-        Stopwatch st = new Stopwatch();
-        st.Start();
         int v = 0;
         int t = 0;
         int i = 0;
@@ -247,8 +244,6 @@ public class GenerateTerrain : MonoBehaviour
                 }
             }
         }
-        st.Stop();
-        UnityEngine.Debug.Log(string.Format("MyMethod took {0} ms to complete", st.ElapsedMilliseconds));
 
     }
 
