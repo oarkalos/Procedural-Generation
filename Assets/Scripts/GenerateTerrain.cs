@@ -84,7 +84,7 @@ public class GenerateTerrain : MonoBehaviour
     {
         minHeight = 100;
         maxHeight = 0;
-        erosion.Erode(ref heights, mapSize, noiseLayers[0].seed);
+        erosion.Erode(ref heights, mapSize, noiseLayers[0].seed, scale);
 
         for (int z = 0; z < mapSize; z++)
         {

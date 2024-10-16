@@ -15,7 +15,7 @@ MonoBehaviour:
   useFirstLayerAsMask: 0
   showSettings: 1
   layerActive: 1
-  octavesSize: 12
+  octavesSize: 8
   lacunarity: 2
   frequency: 2
   persistence: 0.5

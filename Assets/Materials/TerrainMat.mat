@@ -276,7 +276,7 @@ Material:
     - _HeightTessAmplitude: 2
     - _HeightTessCenter: 0.5
     - _Height_of_blend: 0.6
-    - _Height_of_grass: 0.52
+    - _Height_of_grass: 0.543
     - _Height_of_snow: 0.9
     - _InvTilingScale: 1
     - _Ior: 1.5
@@ -284,12 +284,12 @@ Material:
     - _IridescenceThickness: 1
     - _LinkDetailsWithBase: 1
     - _MaterialID: 1
-    - _MaxHeight: 51.96
+    - _MaxHeight: 45.4
     - _Metalic: 1
     - _Metallic: 0.05
     - _MetallicRemapMax: 1
     - _MetallicRemapMin: 0
-    - _MinHeight: -15.8
+    - _MinHeight: -15
     - _MudA: 0.1
     - _MudB: 0.7
     - _MudNoise: 100
@@ -311,7 +311,7 @@ Material:
     - _RenderQueueType: 1
     - _RequireSplitLighting: 0
     - _RockBlendAmount: 1
-    - _SlopeThreshold: 0.228
+    - _SlopeThreshold: 0.245
     - _Smoothness: 0.966
     - _SmoothnessRemapMax: 1
     - _SmoothnessRemapMin: 0
